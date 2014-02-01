@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ConcurrentRingBufferDemo {
     public static void main(String[] args) {
         AtomicBoolean done = new AtomicBoolean(false);
-        ConcurrentRingBuffer<Integer> bf = new ConcurrentRingBuffer<Integer>(1000);
+        ConcurrentRingBuffer<Integer> bf = new ConcurrentRingBuffer<Integer>(10);
         class Producer implements Runnable {
             private ConcurrentRingBuffer<Integer> bf;
             private AtomicBoolean done;
@@ -22,7 +22,7 @@ public class ConcurrentRingBufferDemo {
 
             public void run() {
 
-                Integer index = 100;
+                Integer index = 50;
                 while (index > 0) {
                     try {
                         bf.put(new Integer(index));

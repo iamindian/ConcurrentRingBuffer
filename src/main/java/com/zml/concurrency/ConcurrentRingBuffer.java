@@ -20,25 +20,33 @@ public class ConcurrentRingBuffer<T> {
     }
 
     public T take() throws EmptyBufferException {
-        setThreadLocalVarsForTakingItem();
+        setCurrentIndexToThreadLocal();
         isEmpty();
-        incrementTakeIndexForNextTake();
+        flipStartSmb();
+        takeIndexIncrementForNextTake();
         return returnItem();
     }
 
     public void put(T item) throws FullBufferException {
-        setThreadLocalVarsForPuttingItem();
+        setCurrentIndexToThreadLocal();
         isFull();
-        incrementPutIndexForNextPut();
+        flipEndSmb();
+        putIndexIncrementForNextPut();
         putItem(item);
     }
-    public void incrementTakeIndexForNextTake(){
-        start.incrementAndGet();
-        rotateUnboundTakeIndexToZeroAndFlipStartSmb();
+    public void flipStartSmb(){
+        if(ThreadContextHolder.getThreadLocal().getStart()%bufferSize==0)
+            this.startSmb.flip(0);
     }
-    public void incrementPutIndexForNextPut(){
-        end.incrementAndGet();
-        rotateUnboundPutIndexToZeroAndFlipEndSmb();
+    public void flipEndSmb(){
+        if(ThreadContextHolder.getThreadLocal().getEnd()%bufferSize==0)
+            this.endSmb.flip(0);
+    }
+    public void putIndexIncrementForNextPut(){
+        this.end.getAndIncrement();
+    }
+    public void takeIndexIncrementForNextTake(){
+        this.start.getAndIncrement();
     }
 
     public T returnItem() {
@@ -49,28 +57,12 @@ public class ConcurrentRingBuffer<T> {
         buffer.set(ThreadContextHolder.getThreadLocal().getEnd(), item);
     }
 
-    public void rotateUnboundPutIndexToZeroAndFlipEndSmb() {
-        if (end.compareAndSet(this.bufferSize, 0))
-            endSmb.flip(0);
-    }
 
-    public void rotateUnboundTakeIndexToZeroAndFlipStartSmb() {
-        if (start.compareAndSet(this.bufferSize, 0))
-            startSmb.flip(0);
-    }
-
-    public void setThreadLocalVarsForTakingItem() {
+    public void setCurrentIndexToThreadLocal() {
         ThreadContext context = new ThreadContext();
         ThreadContextHolder.setThreadLocal(context);
-        context.setEnd(this.end.get());
-        context.setStart(this.start.get());
-    }
-
-    public void setThreadLocalVarsForPuttingItem() {
-        ThreadContext context = new ThreadContext();
-        ThreadContextHolder.setThreadLocal(context);
-        context.setEnd(this.end.get());
-        context.setStart(this.start.get());
+        context.setEnd(this.end.get()%bufferSize);
+        context.setStart(this.start.get()%bufferSize);
     }
 
     public void isEmpty() throws EmptyBufferException {
