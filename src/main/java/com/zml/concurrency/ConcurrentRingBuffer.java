@@ -35,11 +35,11 @@ public class ConcurrentRingBuffer<T> {
         putItem(item);
     }
     public void flipStartSmb(){
-        if(ThreadContextHolder.getThreadLocal().getStart()%bufferSize==0)
+        if(ThreadContextHolder.getThreadLocal().getStart()==0)
             this.startSmb.flip(0);
     }
     public void flipEndSmb(){
-        if(ThreadContextHolder.getThreadLocal().getEnd()%bufferSize==0)
+        if(ThreadContextHolder.getThreadLocal().getEnd()==0)
             this.endSmb.flip(0);
     }
     public void putIndexIncrementForNextPut(){
