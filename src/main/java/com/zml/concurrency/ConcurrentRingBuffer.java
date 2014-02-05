@@ -15,8 +15,8 @@ public class ConcurrentRingBuffer<T> {
     public ConcurrentRingBuffer(int bufferSize) {
         this.bufferSize = bufferSize;
         buffer = new AtomicReferenceArray(bufferSize);
-        startSmb.set(0,false);
-        endSmb.set(0,false);
+        startSmb.set(0, false);
+        endSmb.set(0, false);
     }
 
     public T take() throws EmptyBufferException {
@@ -34,20 +34,39 @@ public class ConcurrentRingBuffer<T> {
         putIndexIncrementForNextPut();
         putItem(item);
     }
-    private void flipStartSmb(){
-        if(ThreadContextHolder.getThreadLocal().getStart()==0)
+
+    private void flipStartSmb() {
+        if (ThreadContextHolder.getThreadLocal().getStart() == 0)
             this.startSmb.flip(0);
     }
-    private void flipEndSmb(){
-        if(ThreadContextHolder.getThreadLocal().getEnd()==0)
+
+    private void flipEndSmb() {
+        if (ThreadContextHolder.getThreadLocal().getEnd() == 0)
             this.endSmb.flip(0);
     }
-    private void putIndexIncrementForNextPut(){
-        this.end.getAndIncrement();
 
+    private void putIndexIncrementForNextPut() {
+        while (true) {
+            int current = this.end.get();
+            int next = current + 1;
+            if (next == this.bufferSize) {
+                next = 0;
+            }
+            if (this.end.compareAndSet(current, next))
+                break;
+        }
     }
-    private void takeIndexIncrementForNextTake(){
-        this.start.getAndIncrement();
+
+    private void takeIndexIncrementForNextTake() {
+        while (true) {
+            int current = this.start.get();
+            int next = current + 1;
+            if (next == this.bufferSize) {
+                next = 0;
+            }
+            if (this.start.compareAndSet(current, next))
+                break;
+        }
     }
 
     private T returnItem() {
@@ -62,8 +81,8 @@ public class ConcurrentRingBuffer<T> {
     private void setCurrentIndexToThreadLocal() {
         ThreadContext context = new ThreadContext();
         ThreadContextHolder.setThreadLocal(context);
-        context.setEnd(this.end.get()%bufferSize);
-        context.setStart(this.start.get()%bufferSize);
+        context.setEnd(this.end.get());
+        context.setStart(this.start.get());
     }
 
     private void isEmpty() throws EmptyBufferException {
