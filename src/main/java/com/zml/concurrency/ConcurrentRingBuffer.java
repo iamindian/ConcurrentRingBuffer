@@ -34,45 +34,46 @@ public class ConcurrentRingBuffer<T> {
         putIndexIncrementForNextPut();
         putItem(item);
     }
-    public void flipStartSmb(){
+    private void flipStartSmb(){
         if(ThreadContextHolder.getThreadLocal().getStart()==0)
             this.startSmb.flip(0);
     }
-    public void flipEndSmb(){
+    private void flipEndSmb(){
         if(ThreadContextHolder.getThreadLocal().getEnd()==0)
             this.endSmb.flip(0);
     }
-    public void putIndexIncrementForNextPut(){
+    private void putIndexIncrementForNextPut(){
         this.end.getAndIncrement();
+
     }
-    public void takeIndexIncrementForNextTake(){
+    private void takeIndexIncrementForNextTake(){
         this.start.getAndIncrement();
     }
 
-    public T returnItem() {
+    private T returnItem() {
         return buffer.get(ThreadContextHolder.getThreadLocal().getStart());
     }
 
-    public void putItem(T item) {
+    private void putItem(T item) {
         buffer.set(ThreadContextHolder.getThreadLocal().getEnd(), item);
     }
 
 
-    public void setCurrentIndexToThreadLocal() {
+    private void setCurrentIndexToThreadLocal() {
         ThreadContext context = new ThreadContext();
         ThreadContextHolder.setThreadLocal(context);
         context.setEnd(this.end.get()%bufferSize);
         context.setStart(this.start.get()%bufferSize);
     }
 
-    public void isEmpty() throws EmptyBufferException {
+    private void isEmpty() throws EmptyBufferException {
         int takeIndex = ThreadContextHolder.getThreadLocal().getStart();
         int putIndex = ThreadContextHolder.getThreadLocal().getEnd();
         if (takeIndex == putIndex && startSmb.get(0) == endSmb.get(0))
             throw new EmptyBufferException("Buffer is empty");
     }
 
-    public void isFull() throws FullBufferException {
+    private void isFull() throws FullBufferException {
         int takeIndex = ThreadContextHolder.getThreadLocal().getStart();
         int putIndex = ThreadContextHolder.getThreadLocal().getEnd();
         if (takeIndex == putIndex && startSmb.get(0) != endSmb.get(0))
